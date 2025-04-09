@@ -56,8 +56,8 @@ class AccessToken implements AccessTokenEntityInterface
 
         $configuration = Configuration::forAsymmetricSigner(
             $signer,
-            InMemory::plainText(''),
-            $lcobucciKey
+            $lcobucciKey,
+            InMemory::plainText('')
         );
 
         $builder = $configuration->builder();
