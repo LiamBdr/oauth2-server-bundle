@@ -14,6 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
+use League\Bundle\OAuth2ServerBundle\Entity\AccessToken;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final class LeagueOAuth2ServerBundle extends Bundle
 {
@@ -26,6 +28,20 @@ final class LeagueOAuth2ServerBundle extends Bundle
 
         $this->configureDoctrineExtension($container);
         $this->configureSecurityExtension($container);
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        if ($this->container && $this->container->has('event_dispatcher')) {
+             /** @var EventDispatcherInterface $eventDispatcher */
+             $eventDispatcher = $this->container->get('event_dispatcher');
+             
+             if (class_exists(AccessToken::class) && method_exists(AccessToken::class, 'setEventDispatcher')) {
+                 AccessToken::setEventDispatcher($eventDispatcher);
+             }
+        }
     }
 
     public function getContainerExtension(): ExtensionInterface

@@ -46,4 +46,14 @@ final class OAuth2Events
      * You could alter the client here.
      */
     public const PRE_SAVE_CLIENT = 'league.oauth2_server.event.pre_save_client';
+
+    /**
+     * The BEFORE_JWT_TOKEN_BUILD event is dispatched just before the JWT token is built by the BearerTokenResponse.
+     *
+     * You can use this event to add custom claims to the JWT builder.
+     * The event listener receives a League\Bundle\OAuth2ServerBundle\Event\BeforeJwtTokenBuildEvent instance.
+     *
+     * @Event("League\Bundle\OAuth2ServerBundle\Event\BeforeJwtTokenBuildEvent")
+     */
+    public const BEFORE_JWT_TOKEN_BUILD = 'league.oauth2_server.event.before_jwt_token_build';
 }
