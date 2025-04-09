@@ -6,10 +6,8 @@ namespace League\Bundle\OAuth2ServerBundle\Entity;
 
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Signer\Key as SignerKey;
-use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Token\Plain as PlainToken;
-use League\OAuth2\Server\CryptKey;
+use League\OAuth2\Server\CryptKeyInterface;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\Traits\AccessTokenTrait;
 use League\OAuth2\Server\Entities\Traits\EntityTrait;
@@ -18,14 +16,20 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use League\Bundle\OAuth2ServerBundle\Event\BeforeJwtTokenBuildEvent;
 use League\Bundle\OAuth2ServerBundle\OAuth2Events;
 use DateTimeImmutable;
+use RuntimeException;
 
 class AccessToken implements AccessTokenEntityInterface
 {
-    use AccessTokenTrait {
-        convertToJWT as public traitConvertToJWT;
-    }
+    use AccessTokenTrait;
     use EntityTrait;
     use TokenEntityTrait;
+
+    private CryptKeyInterface $privateKey;
+
+    public function setPrivateKey(CryptKeyInterface $privateKey): void
+    {
+        $this->privateKey = $privateKey;
+    }
 
     private static ?EventDispatcherInterface $eventDispatcher = null;
 
@@ -34,12 +38,26 @@ class AccessToken implements AccessTokenEntityInterface
         self::$eventDispatcher = $eventDispatcher;
     }
 
-    private function buildJwt(SignerKey $privateKey, Signer $signer): PlainToken
+    private function convertToJWT(): PlainToken
     {
+        if (!isset($this->privateKey)) {
+            throw new RuntimeException('Private key has not been set');
+        }
+
+        $signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
+        $lcobucciKey = InMemory::plainText(
+            $this->privateKey->getKeyContents(),
+            $this->privateKey->getPassPhrase() ?? ''
+        );
+
+        if ($this->privateKey->getKeyContents() === '') {
+            throw new RuntimeException('Private key is empty');
+        }
+
         $configuration = Configuration::forAsymmetricSigner(
             $signer,
             InMemory::plainText(''),
-            $privateKey
+            $lcobucciKey
         );
 
         $builder = $configuration->builder();
@@ -60,17 +78,6 @@ class AccessToken implements AccessTokenEntityInterface
         }
 
         return $builder->getToken($configuration->signer(), $configuration->signingKey());
-    }
-
-    public function convertToJWT(CryptKey $privateKey): PlainToken
-    {
-        $signer = new \Lcobucci\JWT\Signer\Rsa\Sha256();
-        $lcobucciKey = InMemory::plainText(
-            $privateKey->getKeyContents(),
-            $privateKey->getPassPhrase() ?? ''
-        );
-
-        return $this->buildJwt($lcobucciKey, $signer);
     }
 
     private function getSubjectIdentifier(): string
