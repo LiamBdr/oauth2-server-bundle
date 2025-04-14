@@ -8,19 +8,12 @@ use Lcobucci\JWT\Token\Builder as BuilderInterface;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
-/**
- * Événement déclenché juste avant la construction finale du token JWT.
- * Permet d'ajouter des claims personnalisés au Builder.
- */
 final class BeforeJwtTokenBuildEvent extends Event
 {
-    private BuilderInterface $builder;
-    private AccessTokenEntityInterface $accessToken;
-
-    public function __construct(BuilderInterface $builder, AccessTokenEntityInterface $accessToken)
-    {
-        $this->builder = $builder;
-        $this->accessToken = $accessToken;
+    public function __construct(
+        private BuilderInterface $builder,
+        private readonly AccessTokenEntityInterface $accessToken
+    ) {
     }
 
     public function getBuilder(): BuilderInterface
